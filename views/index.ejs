@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заметки студентов</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<h1>Заметки студентов</h1>
+
+<form action="/new-note" method="POST">
+    <input type="text" name="title" placeholder="Заголовок" required>
+    <textarea name="content" placeholder="Содержание" required></textarea>
+    <button type="submit">Добавить заметку</button>
+</form>
+
+<h2>Список заметок</h2>
+<ul>
+    <% notes.forEach(note => { %>
+        <li>
+            <h3><%= note.title %></h3>
+            <p><%= note.content %></p>
+        </li>
+    <% }); %>
+</ul>
+</body>
+</html>
