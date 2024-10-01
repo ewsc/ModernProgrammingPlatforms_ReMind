@@ -1,28 +1,92 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Заметки студентов</title>
-    <link rel="stylesheet" href="/styles.css">
+    <title>Task List</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.21.12/dist/css/uikit.min.css" />
 </head>
+
 <body>
-<h1>Заметки студентов</h1>
 
-<form action="/new-note" method="POST">
-    <input type="text" name="title" placeholder="Заголовок" required>
-    <textarea name="content" placeholder="Содержание" required></textarea>
-    <button type="submit">Добавить заметку</button>
-</form>
+<div>
+    <div class="uk-container uk-background-default uk-margin-large-top">
+        <h1 class="uk-heading-bullet"><span>Task List</span></h1>
 
-<h2>Список заметок</h2>
-<ul>
-    <% notes.forEach(note => { %>
-        <li>
-            <h3><%= note.title %></h3>
-            <p><%= note.content %></p>
-        </li>
-    <% }); %>
-</ul>
+        <h2 class="uk-heading-bullet uk-margin-medium-top">Filter by</h2>
+        <div class="uk-flex uk-width-1-1 uk-margin-small-top">
+            <div class="uk-width-4-5">
+                <form action="/" method="GET">
+                    <select name="filterStatus" class="uk-select" onchange="this.form.submit()">
+                        <option value="">All</option>
+                        <option value="Completed" <% if (filterStatus === 'Completed') { %> selected <% } %>>Completed</option>
+                        <option value="In Progress" <% if (filterStatus === 'In Progress') { %> selected <% } %>>In Progress</option>
+                        <option value="Pending" <% if (filterStatus === 'Pending') { %> selected <% } %>>Pending</option>
+                    </select>
+                </form>
+            </div>
+
+            <div class="uk-margin-small-left uk-width-1-5">
+                <button class="uk-button uk-button-default uk-width-1-1" type="button" uk-toggle="target: #add-new-task">Add New Task</button>
+            </div>
+
+
+            <div id="add-new-task" uk-modal>
+                <div class="uk-modal-dialog uk-modal-body">
+
+                    <form action="/add-task" method="POST" enctype="multipart/form-data" class="uk-form-stacked">
+                        <div class="uk-margin">
+                            <label class="uk-form-label" for="title">Task Title</label>
+                            <input type="text" name="title" class="uk-input" placeholder="Task Title" required>
+                        </div>
+                        <div class="uk-margin">
+                            <label class="uk-form-label" for="status">Status</label>
+                            <select name="status" class="uk-select" required>
+                                <option value="Completed">Completed</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Pending">Pending</option>
+                            </select>
+                        </div>
+                        <div class="uk-margin">
+                            <label class="uk-form-label" for="dueDate">Expected Completion Date</label>
+                            <input type="date" name="dueDate" class="uk-input" required>
+                        </div>
+
+                        <div class="uk-margin">
+                            <label class="uk-form-label" for="file">Attach File</label>
+                            <input type="file" name="file" class="uk-button uk-button-default">
+                        </div>
+
+                        <button type="submit" class="uk-button uk-button-primary">Add Task</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="uk-heading-bullet"><span>Tasks</span></h2>
+        <ul class="uk-list uk-list-divider">
+            <% tasks.forEach(task => { %>
+                <li>
+                    <strong><%= task.title %></strong> -
+                    <span class="<%= task.status === 'Completed' ? 'uk-text-success' : task.status === 'In Progress' ? 'uk-text-warning' : 'uk-text-danger' %>">
+                <%= task.status %>
+            </span>
+                    <br>Expected Completion Date: <%= new Date(task.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                    <% if (task.file) { %>
+                        <br><a href="/uploads/<%= task.file %>">Attached File</a>
+                    <% } %>
+                    <br>ID: <strong><%= task.id %></strong><br>
+                    <form action="/delete-task" method="POST" class="uk-inline">
+                        <input type="hidden" name="id" value="<%= task.id %>">
+                        <button type="submit" class="uk-button uk-button-danger uk-button-small">Delete</button>
+                    </form>
+                </li>
+            <% }); %>
+        </ul>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/uikit@3.21.12/dist/js/uikit.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/uikit@3.21.12/dist/js/uikit-icons.min.js"></script>
 </body>
 </html>
