@@ -16,13 +16,15 @@
         <h2 class="uk-heading-bullet uk-margin-medium-top">Filter by</h2>
         <div class="uk-flex uk-width-1-1 uk-margin-small-top">
             <div class="uk-width-4-5">
-                <form action="/" method="GET">
-                    <select name="filterStatus" class="uk-select" onchange="this.form.submit()">
-                        <option value="">All</option>
-                        <option value="Completed" <% if (filterStatus === 'Completed') { %> selected <% } %>>Completed</option>
-                        <option value="In Progress" <% if (filterStatus === 'In Progress') { %> selected <% } %>>In Progress</option>
-                        <option value="Pending" <% if (filterStatus === 'Pending') { %> selected <% } %>>Pending</option>
-                    </select>
+                <form id="filterForm" method="GET">
+                    <label>
+                        <select name="filterStatus" class="uk-select" onchange="submitFilter()">
+                            <option value="">All</option>
+                            <option value="Completed" <% if (filterStatus === 'Completed') { %> selected <% } %>>Completed</option>
+                            <option value="In Progress" <% if (filterStatus === 'In Progress') { %> selected <% } %>>In Progress</option>
+                            <option value="Pending" <% if (filterStatus === 'Pending') { %> selected <% } %>>Pending</option>
+                        </select>
+                    </label>
                 </form>
             </div>
 
@@ -30,26 +32,30 @@
                 <button class="uk-button uk-button-default uk-width-1-1" type="button" uk-toggle="target: #add-new-task">Add New Task</button>
             </div>
 
-
             <div id="add-new-task" uk-modal>
                 <div class="uk-modal-dialog uk-modal-body">
-
-                    <form action="/add-task" method="POST" enctype="multipart/form-data" class="uk-form-stacked">
+                    <form id="addTaskForm" enctype="multipart/form-data" class="uk-form-stacked">
                         <div class="uk-margin">
                             <label class="uk-form-label" for="title">Task Title</label>
-                            <input type="text" name="title" class="uk-input" placeholder="Task Title" required>
+                            <label>
+                                <input type="text" name="title" class="uk-input" placeholder="Task Title" required>
+                            </label>
                         </div>
                         <div class="uk-margin">
                             <label class="uk-form-label" for="status">Status</label>
-                            <select name="status" class="uk-select" required>
-                                <option value="Completed">Completed</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Pending">Pending</option>
-                            </select>
+                            <label>
+                                <select name="status" class="uk-select" required>
+                                    <option value="Completed">Completed</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Pending">Pending</option>
+                                </select>
+                            </label>
                         </div>
                         <div class="uk-margin">
                             <label class="uk-form-label" for="dueDate">Expected Completion Date</label>
-                            <input type="date" name="dueDate" class="uk-input" required>
+                            <label>
+                                <input type="date" name="dueDate" class="uk-input" required>
+                            </label>
                         </div>
 
                         <div class="uk-margin">
@@ -57,29 +63,26 @@
                             <input type="file" name="file" class="uk-button uk-button-default">
                         </div>
 
-                        <button type="submit" class="uk-button uk-button-primary">Add Task</button>
+                        <button type="button" class="uk-button uk-button-primary" onclick="addTask()">Add Task</button>
                     </form>
                 </div>
             </div>
         </div>
 
         <h2 class="uk-heading-bullet"><span>Tasks</span></h2>
-        <ul class="uk-list uk-list-divider">
+        <ul id="taskList" class="uk-list uk-list-divider">
             <% tasks.forEach(task => { %>
-                <li>
+                <li id="task-<%= task.id %>">
                     <strong><%= task.title %></strong> -
                     <span class="<%= task.status === 'Completed' ? 'uk-text-success' : task.status === 'In Progress' ? 'uk-text-warning' : 'uk-text-danger' %>">
-                <%= task.status %>
-            </span>
+                        <%= task.status %>
+                    </span>
                     <br>Expected Completion Date: <%= new Date(task.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %>
                     <% if (task.file) { %>
                         <br><a href="/uploads/<%= task.file %>">Attached File</a>
                     <% } %>
                     <br>ID: <strong><%= task.id %></strong><br>
-                    <form action="/delete-task" method="POST" class="uk-inline">
-                        <input type="hidden" name="id" value="<%= task.id %>">
-                        <button type="submit" class="uk-button uk-button-danger uk-button-small">Delete</button>
-                    </form>
+                    <button class="uk-button uk-button-danger uk-button-small" onclick="deleteTask('<%= task.id %>')">Delete</button>
                 </li>
             <% }); %>
         </ul>
@@ -88,5 +91,77 @@
 
 <script src="https://cdn.jsdelivr.net/npm/uikit@3.21.12/dist/js/uikit.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/uikit@3.21.12/dist/js/uikit-icons.min.js"></script>
+<script>
+    function submitFilter() {
+        const form = document.getElementById('filterForm');
+        const queryString = new URLSearchParams(new FormData(form)).toString();
+        fetch(`/api/tasks?${queryString}`)
+            .then(response => response.json())
+            .then(tasks => {
+                updateTaskList(tasks);
+            });
+    }
+
+    function updateTaskList(tasks) {
+        const taskList = document.getElementById('taskList');
+        taskList.innerHTML = '';
+        tasks.forEach(task => {
+            const listItem = document.createElement('li');
+            listItem.id = `task-${task.id}`;
+            listItem.innerHTML = `
+                <strong>${task.title}</strong> -
+                <span class="${task.status === 'Completed' ? 'uk-text-success' : task.status === 'In Progress' ? 'uk-text-warning' : 'uk-text-danger'}">
+                    ${task.status}
+                </span>
+                <br>Expected Completion Date: ${new Date(task.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                ${task.file ? `<br><a href="/uploads/${task.file}">Attached File</a>` : ''}
+                <br>ID: <strong>${task.id}</strong><br>
+                <button class="uk-button uk-button-danger uk-button-small" onclick="deleteTask('${task.id}')">Delete</button>
+            `;
+            taskList.appendChild(listItem);
+        });
+    }
+
+    function addTask() {
+        const form = document.getElementById('addTaskForm');
+        const formData = new FormData(form);
+        fetch('/api/tasks', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(task => {
+                const taskList = document.getElementById('taskList');
+                const listItem = document.createElement('li');
+                listItem.id = `task-${task.id}`;
+                listItem.innerHTML = `
+                <strong>${task.title}</strong> -
+                <span class="uk-text-success">${task.status}</span>
+                <br>Expected Completion Date: ${new Date(task.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                ${task.file ? `<br><a href="/uploads/${task.file}">Attached File</a>` : ''}
+                <br>ID: <strong>${task.id}</strong><br>
+                <button class="uk-button uk-button-danger uk-button-small" onclick="deleteTask('${task.id}')">Delete</button>
+            `;
+                taskList.appendChild(listItem);
+                UIkit.modal('#add-new-task').hide();
+            });
+        UIkit.notification({message: `New Task Added.`, pos: 'bottom-right'});
+    }
+
+    function deleteTask(id) {
+        fetch(`/api/tasks/${id}`, {
+            method: 'DELETE'
+        })
+            .then(response => {
+                if (response.status === 204) {
+                    const taskItem = document.getElementById(`task-${id}`);
+                    if (taskItem) {
+                        taskItem.remove();
+                        UIkit.notification({message: `Task Deleted.`, pos: 'bottom-right'});
+                    }
+                }
+            });
+    }
+</script>
 </body>
 </html>

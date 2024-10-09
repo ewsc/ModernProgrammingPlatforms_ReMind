@@ -8,16 +8,15 @@ const PORT = 7777;
 app.use('/uploads', express.static('uploads'));
 app.use('/css', express.static('css'));
 
-
 function generateUniqueId() {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-        result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
 }
 
+// noinspection JSUnusedGlobalSymbols
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -29,15 +28,18 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
 
 let tasks = [];
 
 app.get('/', (req, res) => {
+    res.render('index', { tasks, filterStatus: req.query.filterStatus });
+});
+
+app.get('/api/tasks', (req, res) => {
     const filterStatus = req.query.filterStatus;
     let filteredTasks = tasks;
 
@@ -45,23 +47,24 @@ app.get('/', (req, res) => {
         filteredTasks = tasks.filter(task => task.status === filterStatus);
     }
 
-    res.render('index', { tasks: filteredTasks, filterStatus });
+    res.status(200).json(filteredTasks);
 });
 
-app.post('/add-task', upload.single('file'), (req, res) => {
+
+app.post('/api/tasks', upload.single('file'), (req, res) => {
     const { title, status, dueDate } = req.body;
     const file = req.file ? req.file.filename : null;
     const id = generateUniqueId();
     tasks.push({ id, title, status, dueDate, file });
-    res.redirect('/');
+    res.status(201).json({ id, title, status, dueDate, file });
 });
 
-app.post('/delete-task', (req, res) => {
-    const { id } = req.body;
+app.delete('/api/tasks/:id', (req, res) => {
+    const { id } = req.params;
     tasks = tasks.filter(task => task.id !== id);
-    res.redirect('/');
+    res.status(204).send();
 });
 
 app.listen(PORT, () => {
-    console.log(`Free Clash of Clans gems => http://localhost:${PORT}`);
+    console.log(`Server is running at http://localhost:${PORT}`);
 });
